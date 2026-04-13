@@ -1,24 +1,33 @@
 # Sistema Cantina Universitaria
 
-Projeto PHP simples para consolidar pedidos por aluno e exibir um resumo financeiro da cantina.
+Projeto em PHP puro com cadastro de alunos integrado ao MySQL.
 
-## Objetivo
+## O que ja esta pronto
 
-Organizar os pedidos por matricula e calcular o total consumido por cada aluno.
+- Interface de cadastro em `index.php`
+- Envio assíncrono com `fetch()`, sem recarregar a pagina
+- API em `api/cadastros.php`
+- Conexao MySQL em `config/database.php`
+- Script SQL em `database/schema.sql`
+- Lista de alunos atualizada em tempo real
 
 ## Como executar
 
-1. Coloque o projeto em um servidor local com PHP, como o XAMPP.
-2. Abra o navegador no endereco do projeto.
-3. Acesse o arquivo `index.php`.
+1. Inicie `Apache` e `MySQL` no XAMPP.
+2. Crie o banco executando o arquivo `database/schema.sql` no phpMyAdmin ou no MySQL.
+3. Confira se as credenciais em `config/database.php` batem com o seu ambiente.
+4. Abra no navegador:
+   `http://localhost/sistems_cantina_universitaria/`
 
-## Estrutura atual
+## Estrutura
 
-- `index.php`: logica principal e renderizacao da pagina.
-- `.gitignore`: arquivos e pastas que nao devem ser versionados.
+- `index.php`: interface do formulario, listagem e JavaScript com `fetch()`
+- `api/cadastros.php`: endpoint para listar e salvar alunos
+- `config/database.php`: configuracao da conexao MySQL
+- `database/schema.sql`: criacao do banco `cantina_universitaria` e da tabela `alunos`
 
-## Proximos passos sugeridos
+## Observacoes
 
-- separar logica e interface em arquivos diferentes
-- adicionar dados vindos de formulario ou banco de dados
-- criar testes para a consolidacao dos pedidos
+- A matricula e unica no banco.
+- O backend retorna JSON para `GET` e `POST`.
+- Se o MySQL estiver desligado ou o banco nao existir, a API retorna erro de conexao.

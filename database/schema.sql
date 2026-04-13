@@ -1,0 +1,14 @@
+CREATE DATABASE IF NOT EXISTS cantina_universitaria
+CHARACTER SET utf8mb4
+COLLATE utf8mb4_unicode_ci;
+
+USE cantina_universitaria;
+
+CREATE TABLE IF NOT EXISTS alunos (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    nome VARCHAR(150) NOT NULL,
+    email VARCHAR(150) NOT NULL,
+    matricula VARCHAR(50) NOT NULL UNIQUE,
+    curso VARCHAR(150) NOT NULL,
+    criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
