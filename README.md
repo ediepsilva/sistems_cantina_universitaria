@@ -1,6 +1,6 @@
 ﻿# Sistema de Cadastro de Alunos
 
-Aplicacao web desenvolvida em PHP puro com integracao ao MySQL para cadastro e consulta de alunos.
+Aplicacao web desenvolvida em PHP puro com integracao ao MySQL para cadastro, consulta, edicao e exclusao de alunos.
 
 O projeto foi construido como exercicio pratico para demonstrar conhecimentos fundamentais de desenvolvimento web, incluindo formulario, validacao, persistencia em banco de dados e atualizacao da interface sem recarregar a pagina.
 
@@ -21,6 +21,8 @@ O projeto foi construido como exercicio pratico para demonstrar conhecimentos fu
 - Persistencia dos dados no banco MySQL
 - Listagem dos alunos cadastrados em tempo real
 - Busca por nome, email, matricula ou curso
+- Edicao de alunos ja cadastrados
+- Exclusao de registros com confirmacao
 - Respostas em JSON no backend
 
 ## Estrutura do projeto
@@ -65,11 +67,11 @@ Campos principais:
 - Uso de `fetch()` para comunicacao com API em PHP
 - Manipulacao de dados no MySQL com `mysqli`
 - Organizacao basica de projeto separando interface, configuracao e endpoint
-- Validacao de entrada e tratamento de erros
+- Implementacao de operacoes de CRUD com validacao e tratamento de erros
 
 ## Proximas melhorias
 
-- Edicao e exclusao de alunos
 - Paginacao da lista
+- Ordenacao por campos
 - Melhorias visuais para responsividade
 - Testes automatizados
