@@ -1,33 +1,75 @@
-# Sistema Cantina Universitaria
+﻿# Sistema de Cadastro de Alunos
 
-Projeto em PHP puro com cadastro de alunos integrado ao MySQL.
+Aplicacao web desenvolvida em PHP puro com integracao ao MySQL para cadastro e consulta de alunos.
 
-## O que ja esta pronto
+O projeto foi construido como exercicio pratico para demonstrar conhecimentos fundamentais de desenvolvimento web, incluindo formulario, validacao, persistencia em banco de dados e atualizacao da interface sem recarregar a pagina.
 
-- Interface de cadastro em `index.php`
-- Envio assíncrono com `fetch()`, sem recarregar a pagina
-- API em `api/cadastros.php`
-- Conexao MySQL em `config/database.php`
-- Script SQL em `database/schema.sql`
-- Lista de alunos atualizada em tempo real
+## Tecnologias utilizadas
 
-## Como executar
+- PHP
+- MySQL
+- JavaScript
+- HTML
+- CSS
+- XAMPP
 
-1. Inicie `Apache` e `MySQL` no XAMPP.
-2. Crie o banco executando o arquivo `database/schema.sql` no phpMyAdmin ou no MySQL.
-3. Confira se as credenciais em `config/database.php` batem com o seu ambiente.
-4. Abra no navegador:
+## Funcionalidades
+
+- Cadastro de alunos com nome, email, matricula e curso
+- Validacao dos dados enviados pelo formulario
+- Verificacao de matricula duplicada
+- Persistencia dos dados no banco MySQL
+- Listagem dos alunos cadastrados em tempo real
+- Busca por nome, email, matricula ou curso
+- Respostas em JSON no backend
+
+## Estrutura do projeto
+
+- `index.php`: interface principal, formulario, listagem e integracao com JavaScript
+- `api/cadastros.php`: endpoint responsavel por listar e salvar os cadastros
+- `config/database.php`: configuracao de conexao com o banco de dados
+- `database/schema.sql`: script SQL para criacao do banco e da tabela
+
+## Como executar localmente
+
+1. Inicie o `Apache` e o `MySQL` no XAMPP.
+2. Abra o `phpMyAdmin`.
+3. Execute o conteudo do arquivo `database/schema.sql`.
+4. Verifique se as credenciais em `config/database.php` estao corretas.
+5. Acesse no navegador:
    `http://localhost/sistems_cantina_universitaria/`
 
-## Estrutura
+## Banco de dados
 
-- `index.php`: interface do formulario, listagem e JavaScript com `fetch()`
-- `api/cadastros.php`: endpoint para listar e salvar alunos
-- `config/database.php`: configuracao da conexao MySQL
-- `database/schema.sql`: criacao do banco `cantina_universitaria` e da tabela `alunos`
+O projeto utiliza o banco `cantina_universitaria` com a tabela `alunos`.
 
-## Observacoes
+Campos principais:
 
-- A matricula e unica no banco.
-- O backend retorna JSON para `GET` e `POST`.
-- Se o MySQL estiver desligado ou o banco nao existir, a API retorna erro de conexao.
+- `id`
+- `nome`
+- `email`
+- `matricula`
+- `curso`
+- `criado_em`
+
+## Regras implementadas
+
+- Todos os campos sao obrigatorios
+- O email deve estar em formato valido
+- A matricula deve ser unica
+- O backend retorna mensagens de erro apropriadas para falhas de validacao e conexao
+
+## Aprendizados demonstrados
+
+- Integracao entre frontend e backend sem framework
+- Uso de `fetch()` para comunicacao com API em PHP
+- Manipulacao de dados no MySQL com `mysqli`
+- Organizacao basica de projeto separando interface, configuracao e endpoint
+- Validacao de entrada e tratamento de erros
+
+## Proximas melhorias
+
+- Edicao e exclusao de alunos
+- Paginacao da lista
+- Melhorias visuais para responsividade
+- Testes automatizados
