@@ -240,6 +240,12 @@ declare(strict_types=1);
             margin-top: 6px;
         }
 
+        .actions-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
         button {
             border: 0;
             border-radius: 999px;
@@ -364,6 +370,8 @@ declare(strict_types=1);
         .student-actions {
             display: flex;
             justify-content: flex-end;
+            gap: 10px;
+            flex-wrap: wrap;
         }
 
         .student-name {
@@ -400,6 +408,27 @@ declare(strict_types=1);
 
         .button-danger:hover {
             box-shadow: 0 14px 24px rgba(180, 35, 24, 0.22);
+        }
+
+        .button-secondary {
+            padding: 10px 14px;
+            background: rgba(204, 251, 241, 0.85);
+            color: var(--accent-strong);
+            box-shadow: none;
+        }
+
+        .button-secondary:hover {
+            box-shadow: none;
+        }
+
+        .button-neutral {
+            color: var(--ink);
+            background: #f4ede3;
+            box-shadow: none;
+        }
+
+        .button-neutral:hover {
+            box-shadow: none;
         }
 
         @media (max-width: 860px) {
@@ -480,6 +509,7 @@ declare(strict_types=1);
                 <p class="section-copy">Formulario objetivo, com campos essenciais para um cadastro academico simples.</p>
 
                 <form id="cadastroForm">
+                    <input id="cadastroId" name="id" type="hidden">
                     <div class="form-grid">
                         <div class="field full">
                             <label for="nome">Nome completo</label>
@@ -510,7 +540,10 @@ declare(strict_types=1);
                     </div>
 
                     <div class="actions">
-                        <button type="submit" id="submitButton">Cadastrar aluno</button>
+                        <div class="actions-group">
+                            <button type="submit" id="submitButton">Cadastrar aluno</button>
+                            <button type="button" id="cancelEditButton" class="button-neutral" hidden>Cancelar edicao</button>
+                        </div>
                         <p class="hint">Os dados sao gravados no banco MySQL da aplicacao.</p>
                     </div>
 
@@ -545,7 +578,9 @@ declare(strict_types=1);
 
     <script>
         const form = document.getElementById('cadastroForm');
+        const cadastroId = document.getElementById('cadastroId');
         const submitButton = document.getElementById('submitButton');
+        const cancelEditButton = document.getElementById('cancelEditButton');
         const statusMessage = document.getElementById('statusMessage');
         const listaCadastros = document.getElementById('listaCadastros');
         const totalCadastros = document.getElementById('totalCadastros');
@@ -555,6 +590,7 @@ declare(strict_types=1);
         const statUltimo = document.getElementById('statUltimo');
         const statCursos = document.getElementById('statCursos');
         let cadastrosState = [];
+        let editandoId = null;
 
         function escapeHtml(value) {
             return value
@@ -606,6 +642,7 @@ declare(strict_types=1);
                         <p class="student-meta">Matricula: ${escapeHtml(cadastro.matricula)}</p>
                         <p class="student-meta">Cadastrado em: ${escapeHtml(cadastro.criadoEm)}</p>
                         <div class="student-actions">
+                            <button type="button" class="button-secondary" data-edit-id="${cadastro.id}">Editar</button>
                             <button type="button" class="button-danger" data-delete-id="${cadastro.id}" data-delete-name="${escapeHtml(cadastro.nome)}">Excluir</button>
                         </div>
                     </article>
@@ -638,6 +675,27 @@ declare(strict_types=1);
         function mostrarStatus(tipo, mensagem) {
             statusMessage.textContent = mensagem;
             statusMessage.className = `status is-visible ${tipo}`;
+        }
+
+        function entrarModoEdicao(cadastro) {
+            editandoId = cadastro.id;
+            cadastroId.value = String(cadastro.id);
+            form.nome.value = cadastro.nome;
+            form.email.value = cadastro.email;
+            form.matricula.value = cadastro.matricula;
+            form.curso.value = cadastro.curso;
+            submitButton.textContent = 'Salvar alteracoes';
+            cancelEditButton.hidden = false;
+            mostrarStatus('success', `Editando o cadastro de ${cadastro.nome}.`);
+            form.nome.focus();
+        }
+
+        function sairModoEdicao() {
+            editandoId = null;
+            cadastroId.value = '';
+            form.reset();
+            submitButton.textContent = 'Cadastrar aluno';
+            cancelEditButton.hidden = true;
         }
 
         async function carregarCadastros() {
@@ -688,13 +746,51 @@ declare(strict_types=1);
             }
         }
 
+        async function atualizarCadastro(payload) {
+            const resposta = await fetch('api/cadastros.php', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
+
+            const dados = await resposta.json();
+
+            if (!resposta.ok) {
+                throw new Error(dados.mensagem || 'Nao foi possivel atualizar o cadastro.');
+            }
+
+            return dados;
+        }
+
+        async function criarCadastro(payload) {
+            const resposta = await fetch('api/cadastros.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
+
+            const dados = await resposta.json();
+
+            if (!resposta.ok) {
+                throw new Error(dados.mensagem || 'Nao foi possivel concluir o cadastro.');
+            }
+
+            return dados;
+        }
+
         form.addEventListener('submit', async (event) => {
             event.preventDefault();
 
             submitButton.disabled = true;
-            mostrarStatus('success', 'Enviando cadastro...');
+            cancelEditButton.disabled = true;
+            mostrarStatus('success', editandoId ? 'Salvando alteracoes...' : 'Enviando cadastro...');
 
             const payload = {
+                id: editandoId,
                 nome: form.nome.value.trim(),
                 email: form.email.value.trim(),
                 matricula: form.matricula.value.trim(),
@@ -702,38 +798,48 @@ declare(strict_types=1);
             };
 
             try {
-                const resposta = await fetch('api/cadastros.php', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(payload)
-                });
-
-                const dados = await resposta.json();
-
-                if (!resposta.ok) {
-                    throw new Error(dados.mensagem || 'Nao foi possivel concluir o cadastro.');
-                }
-
+                const dados = editandoId
+                    ? await atualizarCadastro(payload)
+                    : await criarCadastro(payload);
                 cadastrosState = dados.cadastros;
                 aplicarFiltro();
                 mostrarStatus('success', dados.mensagem);
-                form.reset();
+                sairModoEdicao();
                 form.nome.focus();
             } catch (error) {
                 mostrarStatus('error', error.message);
             } finally {
                 submitButton.disabled = false;
+                cancelEditButton.disabled = false;
             }
         });
 
         filtroBusca.addEventListener('input', aplicarFiltro);
 
+        cancelEditButton.addEventListener('click', () => {
+            sairModoEdicao();
+            mostrarStatus('success', 'Edicao cancelada.');
+            form.nome.focus();
+        });
+
         listaCadastros.addEventListener('click', (event) => {
             const alvo = event.target;
 
             if (!(alvo instanceof HTMLElement)) {
+                return;
+            }
+
+            const editId = Number(alvo.dataset.editId ?? '0');
+
+            if (editId) {
+                const cadastro = cadastrosState.find((item) => item.id === editId);
+
+                if (!cadastro) {
+                    mostrarStatus('error', 'Cadastro nao encontrado para edicao.');
+                    return;
+                }
+
+                entrarModoEdicao(cadastro);
                 return;
             }
 

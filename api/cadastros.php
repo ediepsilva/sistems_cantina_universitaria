@@ -79,6 +79,23 @@ function matriculaJaExiste(mysqli $conexao, string $matricula): bool
     return $existe;
 }
 
+function matriculaJaExisteEmOutroCadastro(mysqli $conexao, string $matricula, int $id): bool
+{
+    $stmt = $conexao->prepare('SELECT id FROM alunos WHERE matricula = ? AND id <> ? LIMIT 1');
+
+    if (!$stmt instanceof mysqli_stmt) {
+        responder(500, ['mensagem' => 'Nao foi possivel verificar a matricula.']);
+    }
+
+    $stmt->bind_param('si', $matricula, $id);
+    $stmt->execute();
+    $resultado = $stmt->get_result();
+    $existe = $resultado instanceof mysqli_result && $resultado->num_rows > 0;
+    $stmt->close();
+
+    return $existe;
+}
+
 function salvarCadastro(mysqli $conexao, array $cadastro): void
 {
     $stmt = $conexao->prepare(
@@ -128,6 +145,53 @@ function excluirCadastro(mysqli $conexao, int $id): void
     $stmt->close();
 }
 
+function atualizarCadastro(mysqli $conexao, int $id, array $cadastro): void
+{
+    $stmt = $conexao->prepare(
+        'UPDATE alunos SET nome = ?, email = ?, matricula = ?, curso = ? WHERE id = ? LIMIT 1'
+    );
+
+    if (!$stmt instanceof mysqli_stmt) {
+        responder(500, ['mensagem' => 'Nao foi possivel preparar a atualizacao do cadastro.']);
+    }
+
+    $stmt->bind_param(
+        'ssssi',
+        $cadastro['nome'],
+        $cadastro['email'],
+        $cadastro['matricula'],
+        $cadastro['curso'],
+        $id
+    );
+
+    if (!$stmt->execute()) {
+        $stmt->close();
+        responder(500, ['mensagem' => 'Nao foi possivel atualizar o cadastro.']);
+    }
+
+    if ($stmt->affected_rows === 0) {
+        $verificacao = $conexao->prepare('SELECT id FROM alunos WHERE id = ? LIMIT 1');
+
+        if (!$verificacao instanceof mysqli_stmt) {
+            $stmt->close();
+            responder(500, ['mensagem' => 'Nao foi possivel verificar o cadastro informado.']);
+        }
+
+        $verificacao->bind_param('i', $id);
+        $verificacao->execute();
+        $resultado = $verificacao->get_result();
+        $existe = $resultado instanceof mysqli_result && $resultado->num_rows > 0;
+        $verificacao->close();
+
+        if (!$existe) {
+            $stmt->close();
+            responder(404, ['mensagem' => 'Cadastro nao encontrado.']);
+        }
+    }
+
+    $stmt->close();
+}
+
 try {
     $conexao = criarConexao();
 } catch (RuntimeException $exception) {
@@ -160,6 +224,34 @@ if ($method === 'DELETE') {
 
     responder(200, [
         'mensagem' => 'Cadastro excluido com sucesso.',
+        'cadastros' => lerCadastros($conexao),
+    ]);
+}
+
+if ($method === 'PUT') {
+    $rawBody = file_get_contents('php://input');
+    $payload = json_decode($rawBody ?: '[]', true);
+
+    if (!is_array($payload)) {
+        responder(400, ['mensagem' => 'JSON invalido.']);
+    }
+
+    $id = (int) ($payload['id'] ?? 0);
+
+    if ($id <= 0) {
+        responder(422, ['mensagem' => 'Informe um cadastro valido para atualizacao.']);
+    }
+
+    $cadastroAtualizado = validarCadastro($payload);
+
+    if (matriculaJaExisteEmOutroCadastro($conexao, $cadastroAtualizado['matricula'], $id)) {
+        responder(409, ['mensagem' => 'Ja existe um cadastro com essa matricula.']);
+    }
+
+    atualizarCadastro($conexao, $id, $cadastroAtualizado);
+
+    responder(200, [
+        'mensagem' => 'Cadastro atualizado com sucesso.',
         'cadastros' => lerCadastros($conexao),
     ]);
 }
