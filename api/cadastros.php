@@ -15,7 +15,7 @@ function responder(int $statusCode, array $payload): void
 
 function lerCadastros(mysqli $conexao): array
 {
-    $sql = 'SELECT nome, email, matricula, curso, criado_em FROM alunos ORDER BY id DESC';
+    $sql = 'SELECT id, nome, email, matricula, curso, criado_em FROM alunos ORDER BY id DESC';
     $resultado = $conexao->query($sql);
 
     if (!$resultado instanceof mysqli_result) {
@@ -26,6 +26,7 @@ function lerCadastros(mysqli $conexao): array
 
     while ($linha = $resultado->fetch_assoc()) {
         $cadastros[] = [
+            'id' => (int) $linha['id'],
             'nome' => (string) $linha['nome'],
             'email' => (string) $linha['email'],
             'matricula' => (string) $linha['matricula'],
@@ -104,6 +105,29 @@ function salvarCadastro(mysqli $conexao, array $cadastro): void
     $stmt->close();
 }
 
+function excluirCadastro(mysqli $conexao, int $id): void
+{
+    $stmt = $conexao->prepare('DELETE FROM alunos WHERE id = ? LIMIT 1');
+
+    if (!$stmt instanceof mysqli_stmt) {
+        responder(500, ['mensagem' => 'Nao foi possivel preparar a exclusao do cadastro.']);
+    }
+
+    $stmt->bind_param('i', $id);
+
+    if (!$stmt->execute()) {
+        $stmt->close();
+        responder(500, ['mensagem' => 'Nao foi possivel excluir o cadastro.']);
+    }
+
+    if ($stmt->affected_rows === 0) {
+        $stmt->close();
+        responder(404, ['mensagem' => 'Cadastro nao encontrado.']);
+    }
+
+    $stmt->close();
+}
+
 try {
     $conexao = criarConexao();
 } catch (RuntimeException $exception) {
@@ -116,6 +140,28 @@ $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
 if ($method === 'GET') {
     responder(200, ['cadastros' => lerCadastros($conexao)]);
+}
+
+if ($method === 'DELETE') {
+    $rawBody = file_get_contents('php://input');
+    $payload = json_decode($rawBody ?: '[]', true);
+
+    if (!is_array($payload)) {
+        responder(400, ['mensagem' => 'JSON invalido.']);
+    }
+
+    $id = (int) ($payload['id'] ?? 0);
+
+    if ($id <= 0) {
+        responder(422, ['mensagem' => 'Informe um cadastro valido para exclusao.']);
+    }
+
+    excluirCadastro($conexao, $id);
+
+    responder(200, [
+        'mensagem' => 'Cadastro excluido com sucesso.',
+        'cadastros' => lerCadastros($conexao),
+    ]);
 }
 
 if ($method !== 'POST') {

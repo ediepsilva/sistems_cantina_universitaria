@@ -361,6 +361,11 @@ declare(strict_types=1);
             gap: 12px;
         }
 
+        .student-actions {
+            display: flex;
+            justify-content: flex-end;
+        }
+
         .student-name {
             margin: 0;
             font-size: 1.08rem;
@@ -385,6 +390,16 @@ declare(strict_types=1);
 
         .student-meta strong {
             color: var(--highlight);
+        }
+
+        .button-danger {
+            padding: 10px 14px;
+            background: linear-gradient(135deg, #c2410c, #b42318);
+            box-shadow: 0 10px 20px rgba(180, 35, 24, 0.18);
+        }
+
+        .button-danger:hover {
+            box-shadow: 0 14px 24px rgba(180, 35, 24, 0.22);
         }
 
         @media (max-width: 860px) {
@@ -550,10 +565,10 @@ declare(strict_types=1);
                 .replaceAll("'", '&#039;');
         }
 
-        function atualizarContadores(total) {
-            totalCadastros.textContent = String(total);
-            badgeCount.textContent = `${total} ${total === 1 ? 'registro' : 'registros'}`;
-            statTotal.textContent = String(total);
+        function atualizarContadores(totalGeral, totalVisivel) {
+            totalCadastros.textContent = String(totalGeral);
+            statTotal.textContent = String(totalGeral);
+            badgeCount.textContent = `${totalVisivel} ${totalVisivel === 1 ? 'registro' : 'registros'}`;
         }
 
         function atualizarIndicadores(cadastros) {
@@ -568,7 +583,7 @@ declare(strict_types=1);
         }
 
         function renderizarCadastros(cadastros) {
-            atualizarContadores(cadastros.length);
+            atualizarContadores(cadastrosState.length, cadastros.length);
             atualizarIndicadores(cadastrosState);
 
             if (!cadastros.length) {
@@ -580,7 +595,7 @@ declare(strict_types=1);
 
             listaCadastros.innerHTML = cadastros
                 .map((cadastro) => `
-                    <article class="student-card">
+                    <article class="student-card" data-id="${cadastro.id}">
                         <div class="student-head">
                             <div>
                                 <h3 class="student-name">${escapeHtml(cadastro.nome)}</h3>
@@ -590,6 +605,9 @@ declare(strict_types=1);
                         </div>
                         <p class="student-meta">Matricula: ${escapeHtml(cadastro.matricula)}</p>
                         <p class="student-meta">Cadastrado em: ${escapeHtml(cadastro.criadoEm)}</p>
+                        <div class="student-actions">
+                            <button type="button" class="button-danger" data-delete-id="${cadastro.id}" data-delete-name="${escapeHtml(cadastro.nome)}">Excluir</button>
+                        </div>
                     </article>
                 `)
                 .join('');
@@ -638,6 +656,38 @@ declare(strict_types=1);
             }
         }
 
+        async function excluirCadastro(id, nome) {
+            const confirmou = window.confirm(`Deseja realmente excluir o cadastro de ${nome}?`);
+
+            if (!confirmou) {
+                return;
+            }
+
+            mostrarStatus('success', 'Excluindo cadastro...');
+
+            try {
+                const resposta = await fetch('api/cadastros.php', {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ id })
+                });
+
+                const dados = await resposta.json();
+
+                if (!resposta.ok) {
+                    throw new Error(dados.mensagem || 'Nao foi possivel excluir o cadastro.');
+                }
+
+                cadastrosState = dados.cadastros;
+                aplicarFiltro();
+                mostrarStatus('success', dados.mensagem);
+            } catch (error) {
+                mostrarStatus('error', error.message);
+            }
+        }
+
         form.addEventListener('submit', async (event) => {
             event.preventDefault();
 
@@ -679,6 +729,23 @@ declare(strict_types=1);
         });
 
         filtroBusca.addEventListener('input', aplicarFiltro);
+
+        listaCadastros.addEventListener('click', (event) => {
+            const alvo = event.target;
+
+            if (!(alvo instanceof HTMLElement)) {
+                return;
+            }
+
+            const id = Number(alvo.dataset.deleteId ?? '0');
+            const nome = alvo.dataset.deleteName ?? 'este aluno';
+
+            if (!id) {
+                return;
+            }
+
+            excluirCadastro(id, nome);
+        });
 
         carregarCadastros();
     </script>
